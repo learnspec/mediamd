@@ -209,6 +209,31 @@ A MediaMD file is declared via the `!ref` directive at the top of the consuming 
 
 Multiple `!ref` directives may coexist in the same document. The slugs from all referenced files share the same namespace — `id` values must therefore be unique across all MediaMD files referenced in a given document.
 
+### Default Reference Convention — `stock.media.md`
+
+A collection MAY ship a single canonical media catalogue at its root named **`stock.media.md`**. When such a file exists, every other file in the same collection **implicitly references it** — no explicit `!ref ./stock.media.md` (nor `!ref ../../stock.media.md` from a sub-directory) is required for `media:slug` lookups to resolve.
+
+```
+collection-root/
+├── stock.media.md          ← implicitly referenced by every file below
+├── index.track.md
+└── lessons/
+    └── module-1/
+        ├── intro.learn.md  ← `media:slug` resolves against /stock.media.md
+        └── quiz.quiz.md    ← same
+```
+
+Rationale: a collection-level stock is a *registry*, not an additional media bundle — declaring it from each sub-file by relative path (`../../stock.media.md`) is brittle, repetitive, and obscures intent. Reserve `!ref` for *additional* MediaMD catalogues (shared commons, external libraries, alternate domains).
+
+A LearnSpec player MUST resolve `media:slug` by searching, in order:
+
+1. Files declared via explicit `!ref` directives in the current document.
+2. The collection's `stock.media.md` if present at the collection root.
+
+Lookups stop at the first match. If `id` values overlap between an explicit `!ref` and the implicit `stock.media.md`, the explicit `!ref` wins (allowing local override).
+
+This convention is **opt-in by file naming**: any name other than `stock.media.md` at the collection root behaves like a regular MediaMD file and must still be declared with `!ref` to participate in slug resolution.
+
 ### Usage in Content
 
 Once a MediaMD is declared via `!ref`, its assets are referenceable in the document body:
@@ -255,6 +280,8 @@ A complete MediaMD file is therefore a **visually navigable image catalogue** in
 | Image line without a following `media` block | Warning |
 | Image line `id` matching no `media` block | Warning |
 | `id` conflict across multiple MediaMD files referenced in the same document | Warning |
+| `media:slug` reference with no matching `id` in any explicit `!ref` *and* no `stock.media.md` at the collection root | Warning |
+| `media:slug` reference resolved via the implicit `stock.media.md` (no explicit `!ref`) | Info / no diagnostic |
 
 ### Strict Mode (`--strict`)
 
