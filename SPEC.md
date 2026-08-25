@@ -1,7 +1,7 @@
-# MediaMD — Format Specification v0.1
+# MediaMD — Format Specification v0.2
 
 > Part of the **LearnSpec** suite  
-> Status: Draft — May 10, 2026
+> Status: Draft — August 25, 2026
 
 ---
 
@@ -41,7 +41,7 @@ Each level is a strict superset of the previous one.
 ---
 title: "Media — F-22 Raptor"          # optional — inferred from first # H1
 lang: en                               # REQUIRED — BCP-47 code
-spec_version: "0.1"                    # optional — targeted spec version
+spec_version: "0.2"                    # optional — targeted spec version
 author: Jane Smith                     # optional — author of the file (not of the media assets)
 tags: [aviation, military]             # optional
 created: 2026-05-10                    # optional — ISO 8601
@@ -76,7 +76,7 @@ The `title` attribute of the image line (`"media:slug"`) links the rendered imag
 ---
 title: "Media — F-22 Raptor"
 lang: en
-spec_version: "0.1"
+spec_version: "0.2"
 tags: [aviation, military, usaf]
 ---
 
@@ -148,6 +148,30 @@ mime: image/jpeg
 | `title` | **Required** | string | Display title of the media. Used in captions. |
 | `alt` | Recommended | string | Accessibility alt text. Distinct from `title` — describes the visual content of the image. |
 | `description` | Optional | string | Long description of the image content and context. |
+| `legend` | Optional | string (multi-line) | Structured key → label legend for annotated diagrams (numbered/lettered callouts, arrow/colour conventions). One item per line, `<key>. <label>`, preserved verbatim from the source. Never a summary of the image — that is `description`. |
+
+#### Structured Legend
+
+`legend` carries the asset's own key → label list, written as a YAML literal block so line breaks survive round-trips. Players MAY display it under the figure; pipelines MUST NOT fold it into `description` or summarise it — the keys printed on the asset are the contract.
+
+```media id:human-heart-diagram
+source: wikimedia
+image_url: https://upload.wikimedia.org/wikipedia/commons/e/e0/Diagram_of_the_human_heart_%28cropped%29.svg
+title: Diagram of the human heart
+alt: Labelled cross-section of the human heart with numbered chambers and vessels
+description: Cross-section of the human heart showing the chambers, valves and major vessels.
+legend: |
+  1. Right atrium
+  2. Left atrium
+  3. Superior vena cava
+  4. Aorta
+  5. Pulmonary artery
+license: "CC BY-SA 3.0"
+spdx: CC-BY-SA-3.0
+author: Wapcaplet
+origin_url: https://commons.wikimedia.org/wiki/File:Diagram_of_the_human_heart_(cropped).svg
+mime: image/svg+xml
+```
 
 ### Licence Fields
 
@@ -193,6 +217,31 @@ mime: image/jpeg
 | `width` | Optional | integer | Full-resolution image width in pixels. |
 | `height` | Optional | integer | Full-resolution image height in pixels. |
 | `mime` | Optional | string | MIME type (`image/jpeg`, `image/png`, `image/svg+xml`…). |
+
+### Animation Fields
+
+Two optional fields form the [AnimMD](https://github.com/learnspec/animmd) asset embedding (AnimMD spec §Embedding in Host Formats): the asset owns the addressing, the content owns the reference. They only make sense for vector assets (`image/svg+xml`).
+
+| Field | Status | Type | Description |
+|---|---|---|---|
+| `bindings` | Optional | mapping | `name → {shapes: [id, …], callout: n}` — the addressing contract between author-chosen names and the asset's stamped shape ids (and legend callout numbers, when the asset has a numbered `legend`). Verifiable at import: every listed shape id must exist in the asset. |
+| `animation` | Optional | string (multi-line) | A default AnimMD step-reveal script shipped with the asset, written as a YAML literal block. Its `bind:` entries may name `bindings` keys directly. A broken script degrades to the static asset (AnimMD §Graceful Degradation); it never invalidates the entry. |
+
+```yaml
+bindings:
+  atrium-right: {shapes: [p12, p13], callout: 1}
+  atrium-left: {shapes: [p14], callout: 2}
+animation: |
+  ---
+  bind:
+    atria: {label: "atrium"}
+  ---
+
+  ## The atria
+  show: atria
+
+  Blood enters the heart through the two atria.
+```
 
 ---
 
@@ -282,6 +331,9 @@ A complete MediaMD file is therefore a **visually navigable image catalogue** in
 | `id` conflict across multiple MediaMD files referenced in the same document | Warning |
 | `media:slug` reference with no matching `id` in any explicit `!ref` *and* no `stock.media.md` at the collection root | Warning |
 | `media:slug` reference resolved via the implicit `stock.media.md` (no explicit `!ref`) | Info / no diagnostic |
+| `legend` present but not a string | Warning |
+| `bindings` present but not a mapping of name → mapping | Warning |
+| `animation` present but not a string, or failing AnimMD grammar validation | Warning |
 
 ### Strict Mode (`--strict`)
 
