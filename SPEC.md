@@ -253,7 +253,7 @@ A MediaMD file is declared via the `!ref` directive at the top of the consuming 
 
 ```markdown
 !ref ./media-f22.media.md
-!ref https://github.com/neuroneo/commons/blob/main/media/aviation.media.md
+!ref https://github.com/memoneoapp/commons/blob/main/media/aviation.media.md
 ```
 
 Multiple `!ref` directives may coexist in the same document. The slugs from all referenced files share the same namespace — `id` values must therefore be unique across all MediaMD files referenced in a given document.
